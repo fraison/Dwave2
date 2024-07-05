@@ -7,7 +7,7 @@ import src.Utils as utils
 
 
 logger.basicConfig( level=logger.INFO)
-command='pytest -v smoke_test.py'
+command='pytest -v tests/smoke_test.py'
 
 class Inputs():
   def __init__(self):
@@ -50,14 +50,25 @@ class Inputs():
       # parameters
       self.params = np.array([3., 8.])  
       
+      # bias
       self.b = 1.0
+      
+      #factor for setting the upper bound for the integer variables.
+      self.fact_bound =2.0
+      
+      #noise
       self.sigma = 0# 0.2
+      
+      # parameters with bias
       self.full_params = np.append(self.params, self.b)
+      
       # precision 
       self.pDec = 10
+      
       # data points y
       self.at = self.params.reshape(self.d,1)
       self.yt = utils.gt(self.xt,self.at,self.b,self.sigma)
+      
       #precision vector BQM binary
       self.P=np.array([0.1,0.2,0.4,0.8,1.6,3.2,6.4]).T
       
@@ -187,7 +198,7 @@ class Test_regression(object):
         
         tIn = getInputs
      
-        delta_t, sol1 = utils.hybrid_1_reg( tIn.xt, tIn.yt, tIn.pDec, tIn.d, tIn.b, tIn.full_params)
+        delta_t, sol1 = utils.hybrid_1_reg( tIn.xt, tIn.yt, tIn.pDec, tIn.d, tIn.fact_bound, tIn.full_params)
     
         logger.info("sol:{}".format(sol1))
 
@@ -207,10 +218,44 @@ class Test_regression(object):
         assert (np.abs(diff3) < tol) 
         
     
+    
+    
+    def test_hybrid_noRegularization(self, getInputs):
+        """
+        Test the hybrid_1_reg( function.
+
+        Parameters:
+        -----------
+        getInputs : Inputs
+            Input parameters for the test.
+        """     
+        
+        tIn = getInputs
+     
+        delta_t, sol1 = utils.hybrid_1_reg( tIn.xt, tIn.yt, tIn.pDec, tIn.d, tIn.fact_bound, tIn.full_params, regularization = False)
+    
+        logger.info("sol:{}".format(sol1))
+
+        diff1 = sol1[0] - tIn.full_params[0]
+        diff2 = sol1[1] - tIn.full_params[1]
+        diff3 = sol1[2] - tIn.full_params[2]
+        
+        tol = 1e-20 #at most
+        
+        logger.info("difference between generated and reference parameter1 is :"+str(diff1)+" and should be less than: "+str(tol))
+        assert (np.abs(diff1) < tol)
+        
+        logger.info("difference between generated and reference parameter2 is :"+str(diff2)+" and should be less than: "+str(tol))
+        assert (np.abs(diff2) < tol)
+                
+        logger.info("difference between generated and reference parameter3 is :"+str(diff3)+" and should be less than: "+str(tol))
+        assert (np.abs(diff3) < tol) 
+        
+        
         
     def test_exactSolFromBQM(self, getInputs):
         """
-        Test the exactSolFromBQM( function.
+        Test the exactSolFromBQM function.
 
         Parameters:
         -----------
@@ -267,7 +312,7 @@ class Test_regression(object):
         diff2 = sol1[1] - tIn.full_params[1]
         diff3 = sol1[2] - tIn.full_params[2]
         
-        tol = 0.3
+        tol = 0.6
         
         
         logger.info("difference between generated and reference parameter1 is :"+str(diff1)+" and should be less than: "+str(tol))

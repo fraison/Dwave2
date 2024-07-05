@@ -191,6 +191,7 @@ def classic_2(xt, yt, p ,d, full_params, objFunc):
     This function sets up the data, initializes the optimization process, and attempts to minimize
     the objective function defined in `funT2_reg`. It measures and returns the execution time and
     the optimized parameters.
+    Note that it needs a guess (second argument in minimize(...)
 
     Parameters:
     -----------
@@ -246,7 +247,7 @@ def classic_2(xt, yt, p ,d, full_params, objFunc):
 
 
        
-def hybrid_1_reg( xt, yt, p, d, b, params):
+def hybrid_1_reg( xt, yt, p, d, fact_bound, params, regularization = True):
     """
     Perform constrained quadratic model (CQM) optimization for regression with regularization using D-Wave's hybrid solver.
 
@@ -263,8 +264,8 @@ def hybrid_1_reg( xt, yt, p, d, b, params):
         Scaling factor for the coefficients.
     d : int
         Degree of the polynomial or number of features minus one.
-    b : int
-        Base value for setting the upper bound for the integer variables.
+    fact_bound : int
+        factor for setting the upper bound for the integer variables.
     params : array-like
         Initial guess for the coefficients.
 
@@ -284,13 +285,17 @@ def hybrid_1_reg( xt, yt, p, d, b, params):
     # Initialize the CQM object
     cqm = ConstrainedQuadraticModel()
     #ASSUMPTION: we set an upper bound for b
-    bb =  Integer('bb', upper_bound=6*b*p)
+    bb =  Integer('bb', upper_bound=6*fact_bound*p)
     xxt = np.vstack([xt.T, np.ones(len(xt))]).T
     
     #------- this new one is OK
-    tb=[Integer(f"aa_{i}", upper_bound=2*p*params[i]) for i in range(d+1)] #ASSUMPTION WATCH out upper bound !!
-    #obj2 = quicksum([ (yt[i][0]*p - quicksum([tb[j]*xxt[i][j] for j in range(d+1)]))**2 for i  in range(len(xt)) ]) & don't use b=1 at j=d and avoid array error with j+1 and j-1
-    obj2 = quicksum([ (yt[i][0]*p - quicksum([tb[j]*xxt[i][j] for j in range(d+1)]))**2 for i  in range(len(xt)) ]) + quicksum([(tb[j+1]-2.*tb[j]+tb[j-1])**2 for j in range(1,d-1)])
+    tb=[Integer(f"aa_{i}", upper_bound=fact_bound*p*params[i]) for i in range(d+1)] #ASSUMPTION WATCH out upper bound !!
+    #obj2 = quicksum([ (yt[i][0]*p - quicksum([tb[j]*xxt[i][j] for j in range(d+1)]))**2 for i  in range(len(xt)) ]) & don't use b=1 at j=d and avoid array error with j+1 and j-1 
+    if regularization:
+        obj2 = quicksum([ (yt[i][0]*p - quicksum([tb[j]*xxt[i][j] for j in range(d+1)]))**2 for i  in range(len(xt)) ]) + quicksum([(tb[j+1]-2.*tb[j]+tb[j-1])**2 for j in range(1,d-1)])
+    else:
+        print("no Regularization")
+        obj2 = quicksum([ (yt[i][0]*p - quicksum([tb[j]*xxt[i][j] for j in range(d+1)]))**2 for i  in range(len(xt)) ])
     
     
     cqm.set_objective(obj2) # add entropy?
