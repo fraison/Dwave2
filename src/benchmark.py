@@ -40,10 +40,10 @@ class Inputs():
       self.b = 1.0
       
       #noise
-      self.sigma = 0.2   
+      self.sigma = 0.#0.2   
       
       #factor for setting the upper bound for the integer variables.
-      self.fact_bound =2.0
+      self.fact_bound = 1.5
         
       # precision vector decimal 
       self.pDec = 10
@@ -125,7 +125,8 @@ def runBenchmark(regularization, regFuncs, overdetermined, iteration):
 
     #LOOP
     # list of the numbers of variables (dimensions) or free parameters
-    r = [1]#, 3] #don't expect good result here with sigma != 0
+    #r = [1, 3] #don't expect good result here with sigma != 0
+    r = [2,4]
     #r = [4,8,16,32,64, 128, 256, 512]
     
     #STORE RESULTS
@@ -159,7 +160,7 @@ def runBenchmark(regularization, regFuncs, overdetermined, iteration):
         classic_delta_ts[i,0] = d 
         logger.info("------------------")
         logger.info("params:{}".format(full_params))
-        loopParams.append(full_params.tolist()) #WARNING changed to full_parans in next version
+        loopParams.append(full_params.tolist()) 
     
         yt = utils.gt(xt, at, inp.b, inp.sigma)
     
@@ -241,14 +242,15 @@ def runBenchmark(regularization, regFuncs, overdetermined, iteration):
 def mainMethod():
 
     # case 
-    overdetermined = True
+    overdetermined = False
     
-    # iteraton added to the result filenames; number to distinguish the result files
-    iteration = "1"
 
     if overdetermined:
 
-        # OVERDETERMINED CASE   
+        # OVERDETERMINED CASE  
+        
+        # iteraton added to the result filenames; number to distinguish the result files
+        iteration = "1"
     
         #SETUP
         regularization = False
@@ -260,7 +262,23 @@ def mainMethod():
         runBenchmark(regularization, regFuncs, overdetermined, iteration)
 
 
+    else:
+        
+        # UNDERDERTERMINED CASE
+        
+        # iteraton added to the result filenames; number to distinguish the result files
+        iteration = "2"
+        
+        #SETUP
+        regularization = True
+        
+        # calls of functions for regression
+        # only hybdrid here because my benchmark asks for too much resources
+        regFuncs = {"classic1":True, "classic2":True, "hybrid1":True, "exactBQM":False, "quantumBQM":False}
 
+        # run benchmark
+        runBenchmark(regularization, regFuncs, overdetermined, iteration)       
+        
     
           
 if __name__ == '__main__':
